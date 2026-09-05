@@ -7,6 +7,10 @@ fn main() -> color_eyre::eyre::Result<()> {
     let s = toml::to_string(&f)?;
     println!("{s}");
 
+    let l = LocalCmdRunner{};
+    let ll = l.run(&["ls"])?;
+    print!("the result: {ll}");
+
     Ok(())
 }
 
@@ -15,25 +19,27 @@ struct ShFile {
     path: String,
 }
 
-// Need to find a better way to execute shells
-// Subject can't in dependent on execution.
-// Use DI
-
 // Do I need stderr in normal situations?
 trait CmdRunner {
-    fn run(cmd: &[&str]) -> Result<String, RunError>;
+    fn run(&self, cmd: &[&str]) -> Result<String, RunError>;
 }
 
 struct LocalCmdRunner {}
 
 impl CmdRunner for LocalCmdRunner {
-    fn run(cmd: &[&str]) -> Result<String, RunError> {
-        let cmd0 = cmd.first().ok_or(RunError("no command provided".into()))?;
+    fn run(&self, cmd: &[&str]) -> Result<String, RunError> {
+        let cmd0 = cmd.first().ok_or(RunError::NoCommandProvided)?;
         let args = &cmd[1..];
-        let o = Command::new(cmd0)
-            .args(args);
-
-        Err(RunError("Not yet".into()))
+        let o = Command::new(cmd0).args(args).output()?;
+        if o.status.success() {
+            Ok(String::from_utf8_lossy(&o.stdout).into_owned())
+        } else {
+            Err(RunError::CommandFailed {
+                code: o.status.code().unwrap_or(-1), // None if process terminated by signal. TODO:
+                                                     // Handle it better
+                stderr: String::from_utf8_lossy(&o.stderr).into_owned(),
+            })
+        }
     }
 }
 
@@ -63,5 +69,11 @@ impl ShFile {
 struct ClaimError(String);
 
 #[derive(Debug, Error)]
-#[error("Run error {0}")]
-struct RunError(String);
+enum RunError {
+    #[error("process spawn error {0}")]
+    SpawnFailed(#[from] std::io::Error),
+    #[error("no command provided")]
+    NoCommandProvided,
+    #[error("command failed witch {code}, {stderr}")]
+    CommandFailed { code: i32, stderr: String },
+}
