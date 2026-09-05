@@ -1,39 +1,45 @@
 use serde::Serialize;
-use std::{fs, path::PathBuf};
+use std::process::Command;
 use thiserror::Error;
 
 fn main() -> color_eyre::eyre::Result<()> {
-    let f = FileName::from("/etc/hosts".to_string());
-
-    let ff = File::try_claim(f)?;
-    let s = toml::to_string(&ff)?;
-
+    let f = ShFile::claim_existing("/etc/hosts")?;
+    let s = toml::to_string(&f)?;
     println!("{s}");
 
     Ok(())
 }
 
 #[derive(Serialize)]
-struct FileName {
-    path: PathBuf,
+struct ShFile {
+    path: String,
 }
 
-#[derive(Serialize)]
-struct File {
-    name: FileName,
+// Need to find a better way to execute shells
+// Subject can't in dependent on execution.
+// Use DI
+
+trait ShellRunner {
+    fn run(cmd: &[&str]) -> Result<String, RunError>;
 }
 
-impl From<String> for FileName {
-    fn from(s: String) -> Self {
-        Self { path: s.into() }
-    }
-}
+impl ShFile {
+    fn claim_existing(path: &str) -> Result<Self, ClaimError> {
+        let o = Command::new("stat")
+            .arg(path)
+            .arg("-c")
+            .arg("%F")
+            .output()
+            .expect("stat failed");
 
-impl File {
-    fn try_claim(f: FileName) -> Result<Self, ClaimError> {
-        match fs::metadata(&f.path) {
-            Err(e) => Err(ClaimError(format!("{}: {}", f.path.display(), e))),
-            Ok(_) => Ok(Self { name: f})
+        let stdout = String::from_utf8_lossy(&o.stdout).to_string();
+        let stdout = stdout.trim();
+
+        match stdout {
+            "regular file" => Ok(Self {
+                path: path.to_string(),
+            }),
+            _ => Err(ClaimError(format!("I need a regular file, not {}", stdout))),
         }
     }
 }
@@ -41,3 +47,7 @@ impl File {
 #[derive(Debug, Error)]
 #[error("Unable to claim {0}")]
 struct ClaimError(String);
+
+#[derive(Debug, Error)]
+#[error("Run error {0}")]
+struct RunError(String);
