@@ -3,20 +3,46 @@ use std::process::Command;
 use thiserror::Error;
 
 fn main() -> color_eyre::eyre::Result<()> {
-    let f = ShFile::claim_existing("/etc/hosts")?;
+    let l = LocalCmdRunner {};
+    let f = ShFile::new(l)
+        .claim("/etc/hosts")?;
     let s = toml::to_string(&f)?;
     println!("{s}");
-
-    let l = LocalCmdRunner{};
-    let ll = l.run(&["ls"])?;
-    print!("the result: {ll}");
 
     Ok(())
 }
 
 #[derive(Serialize)]
-struct ShFile {
+struct ShFile<T: CmdRunner> {
+    #[serde(skip)]
+    r: T,
     path: String,
+}
+
+impl<T: CmdRunner> ShFile<T> {
+    fn new(r: T) -> Self {
+        Self {
+            path: String::new(),
+            r,
+        }
+    }
+
+    fn claim(mut self, filename: &str) -> Result<Self, ClaimError> {
+        let cmd = &[
+            "stat",
+            "--format",
+            "%F",
+            filename
+        ];
+        let out = self.r.run(cmd)?.trim().to_string();
+        if out.as_str() == "regular file" {
+            self.path = filename.to_string();
+            Ok(self)
+        } else {
+            Err(ClaimError::WrongFileType(out))
+        }
+
+    }
 }
 
 // Do I need stderr in normal situations?
@@ -36,37 +62,20 @@ impl CmdRunner for LocalCmdRunner {
         } else {
             Err(RunError::CommandFailed {
                 code: o.status.code().unwrap_or(-1), // None if process terminated by signal. TODO:
-                                                     // Handle it better
+                // Handle it better
                 stderr: String::from_utf8_lossy(&o.stderr).into_owned(),
             })
         }
     }
 }
 
-impl ShFile {
-    fn claim_existing(path: &str) -> Result<Self, ClaimError> {
-        let o = Command::new("stat")
-            .arg(path)
-            .arg("-c")
-            .arg("%F")
-            .output()
-            .expect("stat failed");
-
-        let stdout = String::from_utf8_lossy(&o.stdout).to_string();
-        let stdout = stdout.trim();
-
-        match stdout {
-            "regular file" => Ok(Self {
-                path: path.to_string(),
-            }),
-            _ => Err(ClaimError(format!("I need a regular file, not {}", stdout))),
-        }
-    }
-}
-
 #[derive(Debug, Error)]
-#[error("Unable to claim {0}")]
-struct ClaimError(String);
+enum ClaimError {
+    #[error("Unable to run command")]
+    RunError(#[from] RunError),
+    #[error("Wrong file type: {0}")]
+    WrongFileType(String)
+} 
 
 #[derive(Debug, Error)]
 enum RunError {
