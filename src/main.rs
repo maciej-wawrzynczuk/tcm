@@ -19,8 +19,22 @@ struct ShFile {
 // Subject can't in dependent on execution.
 // Use DI
 
-trait ShellRunner {
+// Do I need stderr in normal situations?
+trait CmdRunner {
     fn run(cmd: &[&str]) -> Result<String, RunError>;
+}
+
+struct LocalCmdRunner {}
+
+impl CmdRunner for LocalCmdRunner {
+    fn run(cmd: &[&str]) -> Result<String, RunError> {
+        let cmd0 = cmd.first().ok_or(RunError("no command provided".into()))?;
+        let args = &cmd[1..];
+        let o = Command::new(cmd0)
+            .args(args);
+
+        Err(RunError("Not yet".into()))
+    }
 }
 
 impl ShFile {

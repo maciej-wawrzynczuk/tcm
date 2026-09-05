@@ -1,5 +1,9 @@
 # The Config Manager
 
+## TODO
+
+- annotate the files with SDPX using REUSE. I want to be strict with license.
+
 ## Terms
 
 ### Subject
