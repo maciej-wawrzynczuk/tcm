@@ -1,11 +1,12 @@
 use serde::Serialize;
-use std::process::Command;
+use tokio::process::Command;
 use thiserror::Error;
 
-fn main() -> color_eyre::eyre::Result<()> {
+#[tokio::main]
+async fn main() -> color_eyre::eyre::Result<()> {
     let l = LocalCmdRunner {};
     let f = ShFile::new(l)
-        .claim("/etc/hosts")?;
+        .claim("/etc/hosts").await?;
     let s = toml::to_string(&f)?;
     println!("{s}");
 
@@ -27,14 +28,14 @@ impl<T: CmdRunner> ShFile<T> {
         }
     }
 
-    fn claim(mut self, filename: &str) -> Result<Self, ClaimError> {
+    async fn claim(mut self, filename: &str) -> Result<Self, ClaimError> {
         let cmd = &[
             "stat",
             "--format",
             "%F",
             filename
         ];
-        let out = self.r.run(cmd)?.trim().to_string();
+        let out = self.r.run(cmd).await?.trim().to_string();
         if out.as_str() == "regular file" {
             self.path = filename.to_string();
             Ok(self)
@@ -47,16 +48,16 @@ impl<T: CmdRunner> ShFile<T> {
 
 // Do I need stderr in normal situations?
 trait CmdRunner {
-    fn run(&self, cmd: &[&str]) -> Result<String, RunError>;
+    async fn run(&self, cmd: &[&str]) -> Result<String, RunError>;
 }
 
 struct LocalCmdRunner {}
 
 impl CmdRunner for LocalCmdRunner {
-    fn run(&self, cmd: &[&str]) -> Result<String, RunError> {
+    async fn run(&self, cmd: &[&str]) -> Result<String, RunError> {
         let cmd0 = cmd.first().ok_or(RunError::NoCommandProvided)?;
         let args = &cmd[1..];
-        let o = Command::new(cmd0).args(args).output()?;
+        let o = Command::new(cmd0).args(args).output().await?;
         if o.status.success() {
             Ok(String::from_utf8_lossy(&o.stdout).into_owned())
         } else {
