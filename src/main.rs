@@ -2,7 +2,6 @@ use serde::Serialize;
 use tcm::runner::{CmdRunner, LocalCmdRunner, RunError};
 use thiserror::Error;
 
-///////////////////////////// MAIN /////////////////////
 #[tokio::main]
 async fn main() -> color_eyre::eyre::Result<()> {
     let l = LocalCmdRunner {};

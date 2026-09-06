@@ -1,13 +1,16 @@
 use thiserror::Error;
 use tokio::process::Command;
+use async_trait::async_trait;
 
 // Do I need stderr in normal situations?
+#[async_trait]
 pub trait CmdRunner {
     async fn run(&self, cmd: &[&str]) -> Result<String, RunError>;
 }
 
 pub struct LocalCmdRunner {}
 
+#[async_trait]
 impl CmdRunner for LocalCmdRunner {
     async fn run(&self, cmd: &[&str]) -> Result<String, RunError> {
         let cmd0 = cmd.first().ok_or(RunError::NoCommandProvided)?;
