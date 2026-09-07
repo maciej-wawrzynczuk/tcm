@@ -1,13 +1,9 @@
-use thiserror::Error;
-use tokio::process::Command;
 use async_trait::async_trait;
+use crate::RunError;
+use crate::CmdRunner;
+use tokio::process::Command;
 
 // Do I need stderr in normal situations?
-#[async_trait]
-pub trait CmdRunner {
-    async fn run(&self, cmd: &[&str]) -> Result<String, RunError>;
-}
-
 pub struct LocalCmdRunner {}
 
 #[async_trait]
@@ -28,12 +24,3 @@ impl CmdRunner for LocalCmdRunner {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum RunError {
-    #[error("process spawn error {0}")]
-    SpawnFailed(#[from] std::io::Error),
-    #[error("no command provided")]
-    NoCommandProvided,
-    #[error("command failed witch {code}, {stderr}")]
-    CommandFailed { code: i32, stderr: String },
-}
