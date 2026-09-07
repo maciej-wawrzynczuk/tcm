@@ -1,4 +1,4 @@
-use crate::runner::{CmdRunner, RunError};
+use crate::localrunner::{CmdRunner, RunError};
 use serde::Serialize;
 use thiserror::Error;
 
