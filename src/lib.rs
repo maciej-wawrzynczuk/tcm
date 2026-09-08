@@ -1,11 +1,14 @@
 use async_trait::async_trait;
+use std::process::Output;
 use thiserror::Error;
+
 pub mod localrunner;
+pub mod openssh_runner;
 pub mod shfile;
 
 #[async_trait]
 pub trait CmdRunner {
-    async fn run(&self, cmd: &[&str]) -> Result<String, RunError>;
+    async fn run(&self, cmd: &str, args: &[&str]) -> Result<Output, RunError>;
 }
 
 #[derive(Debug, Error)]

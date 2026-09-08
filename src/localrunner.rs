@@ -2,25 +2,16 @@ use async_trait::async_trait;
 use crate::RunError;
 use crate::CmdRunner;
 use tokio::process::Command;
+use std::process::Output;
 
 // Do I need stderr in normal situations?
 pub struct LocalCmdRunner {}
 
 #[async_trait]
 impl CmdRunner for LocalCmdRunner {
-    async fn run(&self, cmd: &[&str]) -> Result<String, RunError> {
-        let cmd0 = cmd.first().ok_or(RunError::NoCommandProvided)?;
-        let args = &cmd[1..];
-        let o = Command::new(cmd0).args(args).output().await?;
-        if o.status.success() {
-            Ok(String::from_utf8_lossy(&o.stdout).into_owned())
-        } else {
-            Err(RunError::CommandFailed {
-                code: o.status.code().unwrap_or(-1), // None if process terminated by signal. TODO:
-                // Handle it better
-                stderr: String::from_utf8_lossy(&o.stderr).into_owned(),
-            })
-        }
+    async fn run(&self, cmd: &str, args: &[&str]) -> Result<Output, RunError> {
+        let o = Command::new(cmd).args(args).output().await?;
+        Ok(o)
     }
 }
 
