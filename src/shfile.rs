@@ -65,6 +65,16 @@ mod test {
 
     }
 
+    #[tokio::test]
+    async fn claim_wrong_filetype() {
+        let r = MockRunner::new();
+        let f = ShFile::new(r);
+        match f.claim("i dont care").await {
+            Ok(_) => panic!("It should be an error"),
+            Err(e) => {} // Worth checking exact error type
+        }
+    }
+
     struct MockRunner {
         o: Output,
     }
