@@ -17,6 +17,8 @@ pub enum RunError {
     SpawnFailed(#[from] std::io::Error),
     #[error("no command provided")]
     NoCommandProvided,
+    #[error("SSH Error {0}")]
+    SSHError(#[from] openssh::Error),
     #[error("command failed witch {code}, {stderr}")]
     CommandFailed { code: i32, stderr: String },
 }

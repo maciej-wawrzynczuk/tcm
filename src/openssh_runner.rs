@@ -1,6 +1,7 @@
 use crate::{CmdRunner, RunError};
 use async_trait::async_trait;
 use openssh::{KnownHosts, Session};
+use std::process::Output;
 
 pub struct SSHRunner {
     session: Session,
@@ -14,3 +15,14 @@ impl SSHRunner {
     }
 }
 
+#[async_trait]
+impl CmdRunner for SSHRunner {
+    async fn run(&self, cmd: &str, args: &[&str]) -> Result<Output, RunError> {
+        let o = self.session
+            .command(cmd)
+            .args(args)
+            .output()
+            .await?;
+        Ok(o)
+    }
+}

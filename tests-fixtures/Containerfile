@@ -1,0 +1,19 @@
+FROM docker.io/debian:bookworm-slim
+
+ARG LOCAL_USER=maciekw
+ARG SSH_PUBKEY
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y openssh-server tini -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd ${LOCAL_USER} && \
+    mkdir /run/sshd && \
+    chmod 755 /run/sshd
+
+EXPOSE 22
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/sbin/sshd", "-D"]
