@@ -8,4 +8,7 @@ build-ssh-image:
     podman build -t {{IMAGE_NAME}} tests-fixtures/
 
 run-ssh:
-    podman run {{IMAGE_NAME}}
+    podman run --rm \
+        -p 12322:22 \
+        -e PUB_KEY="$(cat $HOME/.ssh/id_ed25519.pub)" \
+        {{IMAGE_NAME}}
