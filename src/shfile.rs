@@ -19,7 +19,7 @@ impl<T: CmdRunner> ShFile<T> {
         let args = &["--format", "%F", filename];
         let o = self.r.run(cmd, args).await?;
         let stdout = String::from_utf8_lossy(&o.stdout);
-        if stdout == "regular file" {
+        if stdout.trim() == "regular file" {
             self.path = filename.to_string();
             Ok(self)
         } else {
