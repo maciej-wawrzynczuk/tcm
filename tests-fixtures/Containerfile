@@ -20,4 +20,4 @@ RUN chmod a+x /entrypoint.sh
 EXPOSE 22
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]
-CMD ["/usr/sbin/sshd", "-Dde"]
+CMD ["/usr/sbin/sshd", "-De"]
