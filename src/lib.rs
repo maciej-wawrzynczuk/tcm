@@ -21,4 +21,6 @@ pub enum RunError {
     SSHError(#[from] openssh::Error),
     #[error("command failed witch {code}, {stderr}")]
     CommandFailed { code: i32, stderr: String },
+    #[error("SSH session create error")]
+    SSHSessionCreateError,
 }
