@@ -3,6 +3,7 @@ use tcm::shfile::ShFile;
 
 #[tokio::main]
 async fn main() -> color_eyre::eyre::Result<()> {
+    color_eyre::install()?;
     let l = LocalCmdRunner {};
     let f = ShFile::new(l).claim("/etc/hosts").await?;
 

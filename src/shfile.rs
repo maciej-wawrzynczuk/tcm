@@ -40,7 +40,7 @@ impl<T: CmdRunner> ShFile<T> {
 pub enum ClaimError {
     #[error("Unable to run command")]
     RunError(#[from] RunError),
-    #[error("Wrong file type: {0}")]
+    #[error("Wrong file type: {0:?}")]
     WrongFileType(String),
 }
 
