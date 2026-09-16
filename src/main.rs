@@ -11,7 +11,9 @@ async fn main() -> color_eyre::eyre::Result<()> {
         .build().await?;
     let f = ShFile::new(s).claim("/etc/hosts").await?;
 
-    println!("{}", f.get_content().await?);
+        let raw = f.read_all().await?;
+    let content = String::from_utf8_lossy(&raw);
+    println!("{content}");
 
     Ok(())
 }

@@ -6,9 +6,9 @@ pub struct ShFile<T: CmdRunner> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ShFileError<T: CmdRunner> {
+pub enum ShFileError<E> {
     #[error(transparent)]
-    Runner(#[from] T::Error),
+    Runner(#[from] E),
     #[error("Wrong file type: {0}")]
     WrongFileType(String),
 }
@@ -21,7 +21,7 @@ impl<T: CmdRunner> ShFile<T> {
         }
     }
 
-    pub async fn claim(mut self, filename: &str) -> Result<Self, ShFileError<T>> {
+    pub async fn claim(mut self, filename: &str) -> Result<Self, ShFileError<T::Error>> {
         let cmd = "stat";
         let args = &["--format", "%F", filename];
         let o = self.r.run(cmd, args).await?;
