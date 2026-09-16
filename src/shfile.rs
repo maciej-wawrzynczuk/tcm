@@ -1,4 +1,6 @@
-use crate::CmdRunner;
+use async_trait::async_trait;
+
+use crate::{CmdRunner, ReadAll};
 
 pub struct ShFile<T: CmdRunner> {
     r: T,
@@ -35,6 +37,17 @@ impl<T: CmdRunner> ShFile<T> {
     }
 
     pub async fn read_all(&self) -> Result<Vec<u8>, T::Error> {
+        let cmd = "cat";
+        let args = &[self.path.as_str()];
+        let o = self.r.run(cmd, args).await?;
+        Ok(o.stdout)
+    }
+}
+
+#[async_trait]
+impl<T: CmdRunner> ReadAll for ShFile<T> {
+    type Error = T::Error;
+    async fn read_all(&self) -> Result<Vec<u8>, T::Error> {
         let cmd = "cat";
         let args = &[self.path.as_str()];
         let o = self.r.run(cmd, args).await?;
