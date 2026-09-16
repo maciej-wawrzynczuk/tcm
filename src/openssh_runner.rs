@@ -1,4 +1,4 @@
-use crate::{CmdRunner, RunError};
+use crate::CmdRunner;
 use async_trait::async_trait;
 use openssh::{KnownHosts, Session, SessionBuilder};
 use std::process::Output;
@@ -49,7 +49,8 @@ impl SSHRunnerBuilder {
 
 #[async_trait]
 impl CmdRunner for SSHRunner {
-    async fn run(&self, cmd: &str, args: &[&str]) -> Result<Output, RunError> {
+    type Error = openssh::Error;
+    async fn run(&self, cmd: &str, args: &[&str]) -> Result<Output, Self::Error> {
         let o = self.session.command(cmd).args(args).output().await?;
         Ok(o)
     }
