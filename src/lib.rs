@@ -6,7 +6,7 @@ pub mod openssh_runner;
 pub mod shfile;
 
 #[async_trait]
-pub trait CmdRunner {
+pub trait CmdRunner: Send + Sync {
     type Error: std::error::Error + Send + Sync + 'static;
 
     async fn run(&self, cmd: &str, args: &[&str]) -> Result<Output, Self::Error>;
