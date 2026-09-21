@@ -4,6 +4,7 @@ use std::process::Output;
 pub mod localrunner;
 pub mod openssh_runner;
 pub mod shfile;
+pub mod ssh_host;
 
 #[async_trait]
 pub trait CmdRunner: Send + Sync {
