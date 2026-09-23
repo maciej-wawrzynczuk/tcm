@@ -4,7 +4,7 @@ use std::collections::HashMap;
 pub struct SSHHost {
     pub addr: String,
     pub port: u16,
-    pub user: String,
+    pub user: Option<String>,
 }
 
 impl SSHHost {
@@ -12,6 +12,7 @@ impl SSHHost {
         mut kv_entry: HashMap<String, String>,
         hostname_field: &str,
         port_key: Option<&str>,
+        user_key: Option<&str>,
     ) -> Result<Self, SSHHostError> {
         let addr = kv_entry
             .remove(hostname_field)
@@ -25,10 +26,17 @@ impl SSHHost {
                 .parse::<u16>()?
         };
 
+        let user = match user_key {
+            None => None,
+            Some(k) => Some(kv_entry
+                .remove(k)
+                .ok_or(SSHHostError::NoUser)?)
+        };
+
         Ok(Self {
             addr,
             port,
-            user: "not yet".to_string(),
+            user,
         })
     }
 }
@@ -41,6 +49,8 @@ pub enum SSHHostError {
     NoPort,
     #[error("wrong number")]
     IntParse(#[from] std::num::ParseIntError),
+    #[error("No user")]
+    NoUser,
 }
 
 #[cfg(test)]
@@ -51,7 +61,7 @@ mod test {
     #[test]
     fn hostname_is_mandatory() {
         let kv: HashMap<String, String> = HashMap::new();
-        let fut = SSHHost::from_kv(kv, "i dont care", None);
+        let fut = SSHHost::from_kv(kv, "i dont care", None, None);
         assert!(matches!(fut, Err(SSHHostError::NoHostname)));
     }
 
@@ -60,7 +70,7 @@ mod test {
         let host_key = "foo";
         let host_name = "bar";
         let kv = HashMap::from([(host_key.to_string(), host_name.to_string())]);
-        let sut = SSHHost::from_kv(kv, host_key, None).unwrap();
+        let sut = SSHHost::from_kv(kv, host_key, None, None).unwrap();
         assert_eq!(sut.addr, host_name);
     }
 
@@ -68,7 +78,7 @@ mod test {
     fn port_default() {
         let host_key = "foo";
         let kv = HashMap::from([(host_key.to_string(), "ignore".to_string())]);
-        let sut = SSHHost::from_kv(kv, host_key, None).unwrap();
+        let sut = SSHHost::from_kv(kv, host_key, None, None).unwrap();
         assert_eq!(sut.port, 22);
     }
 
@@ -79,7 +89,7 @@ mod test {
             (host_field.to_string(), "host_name".to_string()),
             ("port".to_string(), "something".to_string()),
         ]);
-        let sut = SSHHost::from_kv(kv, host_field, Some("something else"));
+        let sut = SSHHost::from_kv(kv, host_field, Some("something else"), None);
         assert!(matches!(sut, Err(SSHHostError::NoPort)));
     }
 
@@ -93,7 +103,7 @@ mod test {
             (hostname_field.to_string(), "h".to_string()),
             (port_field.to_string(), port_str),
         ]);
-        let sut = SSHHost::from_kv(kv, hostname_field, Some(port_field)).unwrap();
+        let sut = SSHHost::from_kv(kv, hostname_field, Some(port_field), None).unwrap();
         assert_eq!(sut.port, port);
     }
 
@@ -106,7 +116,28 @@ mod test {
             (host_field.to_string(), "who cares".to_string()),
             (port_field.to_string(), bad_port.to_string()),
         ]);
-        let sut = SSHHost::from_kv(kv_entry, host_field, Some(port_field));
+        let sut = SSHHost::from_kv(kv_entry, host_field, Some(port_field), None);
         assert_matches!(sut, Err(SSHHostError::IntParse(_)));
+    }
+
+    #[test]
+    fn no_user() {
+        let host_key = "foo";
+        let kv = HashMap::from([(host_key.to_string(), "ignore".to_string())]);
+        let sut = SSHHost::from_kv(kv, host_key, None, None).unwrap();
+        assert!(sut.user.is_none());
+    }
+
+    #[test]
+    fn user() {
+        let host_key = "foo";
+        let user_field = "user";
+        let user_name = "my user";
+        let kv = HashMap::from([
+            (host_key.to_string(), "ignore".to_string()),
+            (user_field.to_string(), user_name.to_string())
+        ]);
+        let sut = SSHHost::from_kv(kv, host_key, None, Some(user_field)).unwrap();
+        assert_eq!(sut.user, Some(user_name.to_string()));
     }
 }
